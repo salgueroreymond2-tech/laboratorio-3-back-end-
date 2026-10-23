@@ -3,12 +3,11 @@ import socketserver
 import urllib.request
 import json
 import os
-import ssl
+import uuid
 
 PORT = 8080
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-N8N_URL = "http://localhost:5678/webhook/aduana-lab3-chat-webhook/chat"
-N8N_TEST_URL = "http://localhost:5678/webhook-test/aduana-lab3-chat-webhook/chat"
+N8N_WEBHOOK_URL = "http://localhost:5678/webhook/aduana-lab3-chat-webhook/chat"
 
 class AduanaHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -26,38 +25,42 @@ class AduanaHandler(http.server.SimpleHTTPRequestHandler):
             content_length = int(self.headers.get('Content-Length', 0))
             post_body = self.rfile.read(content_length)
 
-            target_urls = [
-                N8N_URL,
-                N8N_TEST_URL,
-                "http://localhost:5678/webhook/aduana-lab3-chat-webhook",
-                "http://localhost:5678/webhook/VDPl5zFTlpR9jPJ9/chat"
-            ]
+            # Asegurar que el payload tenga sessionId para el nodo Simple Memory de n8n
+            try:
+                body_json = json.loads(post_body.decode('utf-8'))
+            except Exception:
+                body_json = {}
+
+            chat_input = body_json.get('chatInput', '').strip()
+            session_id = body_json.get('sessionId') or f"session_{uuid.uuid4().hex[:8]}"
+            body_json['chatInput'] = chat_input
+            body_json['sessionId'] = session_id
+            forward_body = json.dumps(body_json).encode('utf-8')
+
+            print(f"[Aduana Server] Consulta recibida: \"{chat_input}\" (Session: {session_id})")
 
             success = False
             response_data = None
 
-            # 1. Intentar llamar a los webhooks de n8n
-            for url in target_urls:
-                try:
-                    req = urllib.request.Request(
-                        url,
-                        data=post_body,
-                        headers={'Content-Type': 'application/json'},
-                        method='POST'
-                    )
-                    with urllib.request.urlopen(req, timeout=12) as resp:
-                        if resp.status == 200:
-                            response_data = resp.read()
-                            success = True
-                            break
-                except Exception:
-                    continue
+            # 1. Enviar directamente a n8n para que quede registrado en las ejecuciones de n8n
+            try:
+                req = urllib.request.Request(
+                    N8N_WEBHOOK_URL,
+                    data=forward_body,
+                    headers={'Content-Type': 'application/json'},
+                    method='POST'
+                )
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    if resp.status == 200:
+                        response_data = resp.read()
+                        success = True
+                        print(f"[Aduana Server] Ejecutado exitosamente en n8n.")
+            except Exception as e:
+                print(f"[Aduana Server] Error comunicando con webhook n8n: {e}")
 
-            # 2. Si el webhook de n8n está en modo editor/canvas sin ejecutar, procesar directo con IA + PostgreSQL
+            # 2. Respaldo directo en caso extremo de que n8n esté reiniciándose
             if not success:
                 try:
-                    req_json = json.loads(post_body.decode('utf-8'))
-                    chat_input = req_json.get('chatInput', '')
                     answer = self.process_ai_query(chat_input)
                     response_data = json.dumps({'output': answer}).encode('utf-8')
                     success = True
@@ -79,7 +82,7 @@ class AduanaHandler(http.server.SimpleHTTPRequestHandler):
         script = os.path.join(DIRECTORY, 'scratch', 'run_agent_query.js')
         if not os.path.exists(script):
             return "No se pudo cargar el agente de consultas."
-        res = subprocess.run(['node', script, query], capture_output=True, text=True, timeout=40)
+        res = subprocess.run(['node', script, query], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60)
         if res.returncode == 0:
             return res.stdout.strip()
         else:
