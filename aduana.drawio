@@ -1,0 +1,74 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="modelo" name="DER geométrico en cascada">
+    <mxGraphModel dx="2774" dy="1390" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3230" pageHeight="3490" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;PAÍS&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_pais : bigint&lt;br&gt;nombre : varchar(100)&lt;br&gt;codigo_iso : char(2)" vertex="1">
+          <mxGeometry height="167" width="370" x="1854.727272727272" y="1721.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;IMPORTADOR / EXPORTADOR&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_importador : bigint&lt;br&gt;nombre : varchar(150)&lt;br&gt;nit_ruc : varchar(40)&lt;br&gt;direccion : text&lt;br&gt;telefono : varchar(30)&lt;br&gt;correo : varchar(254)" vertex="1">
+          <mxGeometry height="254" width="370" x="2344.727272727272" y="1721.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;AGENTE ADUANAL&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_agente : bigint&lt;br&gt;nombre : varchar(150)&lt;br&gt;licencia : varchar(40)&lt;br&gt;telefono : varchar(30)" vertex="1">
+          <mxGeometry height="196" width="370" x="2834.727272727272" y="1721.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;CATEGORÍA ARANCELARIA&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_categoria : bigint&lt;br&gt;codigo : varchar(12)&lt;br&gt;descripcion : text&lt;br&gt;porcentaje_arancel : numeric(5,2)" vertex="1">
+          <mxGeometry height="196" width="370" x="1854.727272727272" y="2241.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;DECLARACIÓN ADUANERA&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_declaracion : bigint&lt;br&gt;numero : varchar(30)&lt;br&gt;fecha : date&lt;br&gt;regimen : varchar(20)&lt;br&gt;estado : varchar(20)&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; · id_importador : bigint&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; · id_agente : bigint&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; · id_pais_origen : bigint" vertex="1">
+          <mxGeometry height="312" width="370" x="2344.727272727272" y="2241.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;FUNCIONARIO&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_funcionario : bigint&lt;br&gt;nombre : varchar(150)&lt;br&gt;cargo : varchar(80)&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; · id_supervisor : bigint · NULL" vertex="1">
+          <mxGeometry height="196" width="370" x="2834.727272727272" y="2241.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-7" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;PRODUCTO / MERCANCÍA&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK&lt;/b&gt; · id_producto : bigint&lt;br&gt;descripcion : text&lt;br&gt;unidad_medida : varchar(20)&lt;br&gt;valor_unitario : numeric(14,2)&lt;br&gt;&lt;b&gt;FK&lt;/b&gt; · id_categoria : bigint" vertex="1">
+          <mxGeometry height="225" width="370" x="1854.727272727272" y="2761.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-8" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#334e60;fontColor=#1f3442;fontFamily=Helvetica;fontSize=15;align=left;verticalAlign=top;spacing=14;" value="&lt;b&gt;DETALLE DE DECLARACIÓN&lt;/b&gt;&lt;hr&gt;&lt;b&gt;PK, FK&lt;/b&gt; · id_declaracion : bigint&lt;br&gt;&lt;b&gt;PK, FK&lt;/b&gt; · id_producto : bigint&lt;br&gt;cantidad : numeric(14,3)&lt;br&gt;valor_declarado : numeric(16,2)" vertex="1">
+          <mxGeometry height="196" width="370" x="2344.727272727272" y="2761.090909090909" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-9" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-5" value="1:N · origen">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1809.727272727272" y="2041.090909090909" />
+              <mxPoint x="1809.727272727272" y="2166.090909090909" />
+              <mxPoint x="2299.727272727272" y="2166.090909090909" />
+              <mxPoint x="2299.727272727272" y="2346.090909090909" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-10" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-5" value="1:N · presenta">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-11" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-5" value="1:N · gestiona">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3019.727272727272" y="2126.090909090909" />
+              <mxPoint x="2764.727272727272" y="2126.090909090909" />
+              <mxPoint x="2764.727272727272" y="2346.090909090909" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-12" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-7" value="1:N · clasifica">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-13" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-8" value="1:N · contiene">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-14" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;" target="YxJ5nkd0XnlC1gaMPj9I-8" value="1:N · aparece en">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YxJ5nkd0XnlC1gaMPj9I-15" edge="1" parent="1" source="YxJ5nkd0XnlC1gaMPj9I-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=none;fontSize=15;labelBackgroundColor=#ffffff;strokeColor=#526f80;exitX=1;exitY=0.4;entryX=0.5;entryY=0;" target="YxJ5nkd0XnlC1gaMPj9I-6" value="supervisor 0..1 / subordinados 0..N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="3269.727272727272" y="2321.090909090909" />
+              <mxPoint x="3269.727272727272" y="2166.090909090909" />
+              <mxPoint x="3019.727272727272" y="2166.090909090909" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

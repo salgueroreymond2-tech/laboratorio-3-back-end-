@@ -1,0 +1,16 @@
+# Dependencias
+node_modules/
+npm-debug.log*
+
+# Entorno y credenciales
+.env
+.env.*
+!.env.example
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log

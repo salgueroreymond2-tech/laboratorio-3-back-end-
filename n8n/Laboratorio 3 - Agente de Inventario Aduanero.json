@@ -1,0 +1,148 @@
+{
+  "name": "Laboratorio 3 - Agente de Inventario Aduanero",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d315c5f8-3990-4fd1-a17f-b358d257909b",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        3808,
+        2400
+      ],
+      "webhookId": "aduana-lab3-chat-webhook"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Eres el Asistente Oficial de Inteligencia Artificial del Sistema de Inventario Aduanero (Laboratorio #3).\nTu objetivo es ayudar a los funcionarios de la aduana a consultar información en tiempo real sobre declaraciones aduaneras (DUA), mercancías, contenedores, bodegas, movimientos, importadores e inspecciones, traduciendo sus preguntas en lenguaje natural a consultas SQL precisas.\n\n### REGLAS DE SEGURIDAD Y COMPORTAMIENTO (ESTRICTAS):\n1. **SOLO LECTURA (SELECT):** Por seguridad e integridad referencial, tienes ESTRICTAMENTE PROHIBIDO ejecutar sentencias `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE` o `CREATE`. Únicamente puedes generar y ejecutar consultas `SELECT` a través de tu herramienta `Consultar_BD_Aduana`.\n2. **CERO INVENCIÓN DE DATOS:** Siempre utiliza la herramienta `Consultar_BD_Aduana` antes de responder cualquier pregunta sobre datos. Si una consulta no devuelve filas, indícalo claramente sin inventar registros.\n3. **FORMATO DE RESPUESTA:** Responde siempre en español claro, profesional y bien estructurado (usa tablas Markdown o listas con viñetas cuando muestres múltiples registros, montos o conteos).\n\n### ESQUEMA DE LA BASE DE DATOS RELACIONAL:\nUsa exactamente estos nombres de tablas y columnas al construir tus consultas SQL:\n\n1. `pais` (`id_pais` PK, `nombre`, `codigo_iso`)\n2. `importador` (`id_importador` PK, `nombre_razon_social`, `identificacion_tributaria`, `direccion`, `telefono`, `correo`)\n3. `agente_aduanal` (`id_agente` PK, `nombre`, `licencia`, `telefono`)\n4. `categoria_arancelaria` (`id_categoria` PK, `codigo_sa`, `descripcion`, `porcentaje_arancel`)\n5. `producto` (`id_producto` PK, `descripcion`, `unidad_medida`, `valor_unitario`, `id_categoria` FK -> categoria_arancelaria)\n6. `declaracion_aduanera` (`id_declaracion` PK, `numero`, `fecha`, `regimen` ['Importacion', 'Exportacion', 'Transito', 'Deposito'], `estado` ['Retenida', 'Liberada', 'En Inspeccion'], `id_importador` FK -> importador, `id_agente` FK -> agente_aduanal, `id_pais_origen` FK -> pais)\n7. `detalle_declaracion` (`id_declaracion` FK, `id_producto` FK, `cantidad`, `valor_declarado`) -> *Tabla intermedia N:M*\n8. `contenedor` (`id_contenedor` PK, `numero`, `tipo`, `peso_kg`, `id_declaracion` FK -> declaracion_aduanera)\n9. `bodega` (`id_bodega` PK, `nombre`, `ubicacion`, `capacidad_m3`)\n10. `inventario_bodega` (`id_bodega` FK -> bodega, `id_producto` FK -> producto, `cantidad`, `fecha_ingreso`, `estado` ['Retenido', 'Liberado'])\n11. `movimiento_inventario` (`id_movimiento` PK, `tipo` ['Entrada', 'Salida', 'Traslado'], `fecha`, `cantidad`, `id_producto` FK -> producto, `id_bodega` FK -> bodega)\n12. `funcionario` (`id_funcionario` PK, `nombre`, `cargo`, `id_supervisor` FK -> funcionario.id_funcionario)\n13. `inspeccion` (`id_inspeccion` PK, `fecha`, `resultado` ['Aprobada', 'Con Observaciones', 'Rechazada'], `observaciones`, `id_declaracion` FK -> declaracion_aduanera, `id_funcionario` FK -> funcionario)\n\n### CONSEJOS PARA TUS CONSULTAS SQL:\n- Si no estás 100% seguro de cómo está escrito un valor o si el nombre de alguna tabla varía ligeramente en la BD del estudiante, puedes consultar primero `SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public';`.\n- Utiliza `ILIKE` (en PostgreSQL) o `LOWER()` para búsquedas de texto insensibles a mayúsculas/minúsculas y tildes (ej. `'Import%'`, `'Retenid%'`, `'%China%'`)."
+        }
+      },
+      "id": "5d1c42e4-013d-46b7-8216-823613363709",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        4080,
+        2400
+      ]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "id": "fe8d8f3f-ff1f-4f60-a5f0-ac0c1c9392f7",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4128,
+        2640
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Execute a SQL query in PostgresSELECT table_name FROM information_schema.tables WHERE table_schema = 'public';",
+        "operation": "executeQuery",
+        "query": "{{ $fromAI('query', 'Consulta SQL SELECT válida para PostgreSQL que responde a la pregunta del usuario', 'string') }}",
+        "options": {}
+      },
+      "id": "bb0ef6c9-20f2-4c1e-9683-7d94875d3996",
+      "name": "Consultar_BD_Aduana",
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.5,
+      "position": [
+        4352,
+        2608
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "71bdQVIkV4LSrcus",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        3952,
+        2608
+      ],
+      "id": "fb175527-c57c-4076-9e26-a298c8d0fa16",
+      "name": "DeepSeek Chat Model",
+      "credentials": {
+        "deepSeekApi": {
+          "id": "DfbSLYL3RlEqvAOL",
+          "name": "DeepSeek account 11"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar_BD_Aduana": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "06626497-7479-4203-a890-8e1ab7c052ba",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "35d97650703e2a576ace3967bc9b6ffc1b1369cad53c058fb954541742fd5f3a"
+  },
+  "id": "VDPl5zFTlpR9jPJ9",
+  "tags": []
+}

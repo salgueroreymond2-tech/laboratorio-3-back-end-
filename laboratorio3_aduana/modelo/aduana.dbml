@@ -1,0 +1,265 @@
+// ============================================================================
+// PROYECTO: Laboratorio #3 - Sistema de Inventario para una Aduana
+// AUTOR: Reymond Salguero
+// FECHA: Octubre de 2026
+// PLATAFORMA: Supabase | MOTOR: PostgreSQL 18
+// ESQUEMA: aduana
+// FORMATO: DBML (Database Markup Language) para dbdiagram.io
+// ============================================================================
+
+Project aduana_sistema_inventario {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # Sistema de Inventario Aduanero y Control de Declaraciones (DUA)
+    Esquema relacional académico para gestión de declaraciones aduaneras,
+    mercancías, contenedores, inspecciones físicas y existencias en bodega.
+  '''
+}
+
+// ----------------------------------------------------------------------------
+// 1. PAIS
+// ----------------------------------------------------------------------------
+Table aduana.pais {
+  id_pais integer [pk, increment, note: 'PK autoincremental de país']
+  codigo_iso_alfa2 varchar(2) [not null, unique, note: 'Código ISO 3166-1 alfa-2 (ej. CR, CN, US). Restricción CHECK en SQL: longitud 2 y mayúsculas']
+  nombre varchar(100) [not null, unique, note: 'Nombre común oficial del país']
+  activo boolean [not null, default: true, note: 'Indicador de vigencia operativa']
+
+  Note: 'Catálogo oficial de países. Permite diferenciar origen de mercancía, procedencia de contenedor y domicilio de importador.'
+}
+
+// ----------------------------------------------------------------------------
+// 2. IMPORTADOR
+// ----------------------------------------------------------------------------
+Table aduana.importador {
+  id_importador integer [pk, increment, note: 'PK autoincremental del importador']
+  id_pais integer [not null, note: 'FK a pais: país de constitución o residencia fiscal del importador']
+  identificacion_tributaria varchar(20) [not null, unique, note: 'Identificación fiscal única (cédula jurídica o NIF)']
+  razon_social varchar(150) [not null, note: 'Nombre comercial o razón social registrada']
+  correo_contacto varchar(100) [not null, note: 'Correo electrónico de contacto']
+  telefono_contacto varchar(25) [not null, note: 'Teléfono oficial de contacto']
+  direccion_fiscal text [not null, note: 'Dirección legal declarada']
+  activo boolean [not null, default: true, note: 'Estado operativo del importador']
+
+  Note: 'Persona jurídica o física que realiza importaciones ante la aduana.'
+}
+
+// ----------------------------------------------------------------------------
+// 3. AGENTE ADUANAL
+// ----------------------------------------------------------------------------
+Table aduana.agente_aduanal {
+  id_agente_aduanal integer [pk, increment, note: 'PK autoincremental del agente aduanal']
+  numero_licencia varchar(20) [not null, unique, note: 'Número de credencial o licencia aduanera autorizada']
+  nombre_completo varchar(150) [not null, note: 'Nombre completo del agente aduanal']
+  correo varchar(100) [not null, note: 'Correo electrónico oficial']
+  telefono varchar(25) [not null, note: 'Teléfono de contacto']
+  activo boolean [not null, default: true, note: 'Estado de la habilitación profesional']
+
+  Note: 'Auxiliar de la función pública aduanera que tramita el DUA en representación del importador.'
+}
+
+// ----------------------------------------------------------------------------
+// 4. CATEGORIA ARANCELARIA
+// ----------------------------------------------------------------------------
+Table aduana.categoria_arancelaria {
+  id_categoria integer [pk, increment, note: 'PK autoincremental de la categoría']
+  codigo_capitulo varchar(2) [not null, note: 'Capítulo del Sistema Armonizado (2 dígitos texto)']
+  codigo_partida varchar(4) [not null, note: 'Partida del Sistema Armonizado (4 dígitos texto)']
+  codigo_subpartida varchar(6) [not null, unique, note: 'Subpartida del Sistema Armonizado (6 dígitos texto, conserva ceros)']
+  descripcion text [not null, note: 'Descripción oficial de la subpartida arancelaria']
+  arancel_base_porcentaje numeric(5,2) [not null, note: 'Tasa arancelaria porcentual académica (0 a 100)']
+
+  Note: 'Nomenclatura arancelaria internacional del Sistema Armonizado (SA).'
+}
+
+// ----------------------------------------------------------------------------
+// 5. PRODUCTO
+// ----------------------------------------------------------------------------
+Table aduana.producto {
+  id_producto integer [pk, increment, note: 'PK autoincremental del producto']
+  id_categoria integer [not null, note: 'FK a categoria_arancelaria']
+  id_pais_origen integer [not null, note: 'FK a pais: país donde se fabricó o cosechó la mercancía (ej. China)']
+  codigo_sku varchar(30) [not null, unique, note: 'Identificador único de catálogo de mercancía']
+  nombre_comercial varchar(150) [not null, note: 'Denominación comercial del producto']
+  descripcion text [not null, note: 'Descripción detallada de la mercancía']
+  unidad_medida varchar(20) [not null, note: 'Unidad de medida estándar (unidades, kilogramos, litros, cajas)']
+  activo boolean [not null, default: true, note: 'Estado del catálogo de producto']
+
+  Note: 'Catálogo de mercancías comercializables. El origen del producto define consultas como mercancías de China.'
+}
+
+// ----------------------------------------------------------------------------
+// 6. CONTENEDOR
+// ----------------------------------------------------------------------------
+Table aduana.contenedor {
+  id_contenedor integer [pk, increment, note: 'PK autoincremental del contenedor']
+  id_pais_procedencia integer [not null, note: 'FK a pais: país de embarque/procedencia del contenedor físico']
+  numero_sigla varchar(11) [not null, unique, note: 'Identificación internacional ISO 6346 (4 letras + 7 dígitos)']
+  tipo_dimension varchar(20) [not null, note: 'Tipo y tamaño ISO: 20GP, 40GP, 40HC, 45HC, 20RF, 40RF']
+  tara_kg numeric(10,2) [not null, note: 'Peso vacío en kilogramos (> 0)']
+  capacidad_max_kg numeric(10,2) [not null, note: 'Capacidad de carga máxima (> tara_kg)']
+  estado_operativo varchar(25) [not null, note: 'Estado: En Transito, En Puerto, En Inspeccion, En Bodega, Despachado']
+
+  Note: 'Unidad de transporte intermodal de carga. Su procedencia responde a la consulta de países con más contenedores.'
+}
+
+// ----------------------------------------------------------------------------
+// 7. FICHA CONTENEDOR (Entidad 13 - Relación 1:1 con contenedor)
+// ----------------------------------------------------------------------------
+Table aduana.ficha_contenedor {
+  id_contenedor integer [pk, note: 'PK y FK hacia contenedor.id_contenedor (relación 1:1 estricta)']
+  numero_marchamo_aduana varchar(30) [not null, unique, note: 'Precinto o marchamo de seguridad aduanera colocado']
+  temperatura_controlada_c numeric(5,2) [null, note: 'Temperatura en Celsius si aplica refrigeración']
+  humedad_relativa_porc numeric(5,2) [null, note: 'Humedad relativa en porcentaje si aplica control ambiental']
+  observacion_inspeccion_fisica text [null, note: 'Notas técnicas sobre el estado estructural del contenedor']
+  fecha_emision_ficha timestamptz [not null, default: `CURRENT_TIMESTAMP`, note: 'Fecha y hora de confección de la ficha']
+
+  Note: 'Ficha técnica y precinto aduanero del contenedor. Participación 0..1 desde contenedor; 1..1 desde ficha_contenedor.'
+}
+
+// ----------------------------------------------------------------------------
+// 8. DECLARACION ADUANERA (Cabecera DUA)
+// ----------------------------------------------------------------------------
+Table aduana.declaracion_aduanera {
+  id_declaracion integer [pk, increment, note: 'PK autoincremental de la declaración']
+  id_importador integer [not null, note: 'FK a importador']
+  id_agente_aduanal integer [not null, note: 'FK a agente_aduanal']
+  id_contenedor integer [not null, note: 'FK a contenedor (asociación directa del contenedor asignado)']
+  numero_dua varchar(20) [not null, unique, note: 'Número de DUA académico didáctico (ej. DUA-2026-0001)']
+  regimen varchar(25) [not null, note: 'Régimen: Importacion, Exportacion, Transito, Deposito']
+  estado varchar(25) [not null, note: 'Estado operativo: Retenida, Liberada, En Inspeccion']
+  fecha_declaracion date [not null, note: 'Fecha de registro de la declaración']
+  fecha_ingreso_recinto timestamptz [not null, note: 'Evento de arribo de la carga para cálculo de permanencia']
+  moneda varchar(3) [not null, default: 'USD', note: 'Moneda declarada uniforme (USD)']
+
+  Note: 'Cabecera del Documento Único Aduanero (DUA). Los totales económicos se calculan dinámicamente desde el detalle.'
+}
+
+// ----------------------------------------------------------------------------
+// 9. DETALLE DECLARACION (Líneas DUA - Resuelve Declaración/Producto N:M)
+// ----------------------------------------------------------------------------
+Table aduana.detalle_declaracion {
+  id_declaracion integer [not null, note: 'FK a declaracion_aduanera (parte de PK compuesta)']
+  numero_linea integer [not null, note: 'Número correlativo de línea dentro del DUA (1, 2, 3...)']
+  id_producto integer [not null, note: 'FK a producto. Permite repetir producto en líneas distintas por lote/arancel']
+  cantidad numeric(12,2) [not null, note: 'Cantidad declarada (> 0)']
+  unidad_medida varchar(20) [not null, note: 'Unidad de medida (unidades, kilogramos, litros, cajas)']
+  valor_unitario numeric(14,2) [not null, note: 'Valor aduanero unitario en USD (>= 0)']
+  tasa_arancelaria_porc numeric(5,2) [not null, note: 'Tasa arancelaria liquidada (0 a 100)']
+  descripcion_arancelaria text [not null, note: 'Especificación de la mercancía en esta línea declarada']
+
+  indexes {
+    (id_declaracion, numero_linea) [pk]
+  }
+
+  Note: 'Línea del DUA. Granularidad (id_declaracion, numero_linea). El valor declarado total surge de SUM(cantidad * valor_unitario).'
+}
+
+// ----------------------------------------------------------------------------
+// 10. BODEGA
+// ----------------------------------------------------------------------------
+Table aduana.bodega {
+  id_bodega integer [pk, increment, note: 'PK autoincremental de la bodega']
+  codigo_bodega varchar(15) [not null, unique, note: 'Código de bodega aduanera (ej. BOD-FISCAL-01)']
+  nombre varchar(100) [not null, note: 'Nombre descriptivo de la bodega']
+  tipo_bodega varchar(30) [not null, note: 'Tipo: Fiscal, Refrigerada, General, Mercancias Peligrosas']
+  ubicacion_recinto varchar(150) [not null, note: 'Sector o patio dentro del recinto portuario/aduanero']
+  capacidad_volumen_m3 numeric(10,2) [not null, note: 'Capacidad volumétrica en metros cúbicos (> 0)']
+  activo boolean [not null, default: true, note: 'Estado operativo de la bodega']
+
+  Note: 'Instalación de almacenamiento bajo potestad aduanera.'
+}
+
+// ----------------------------------------------------------------------------
+// 11. INVENTARIO BODEGA (Existencias físicas con trazabilidad completa)
+// ----------------------------------------------------------------------------
+Table aduana.inventario_bodega {
+  id_inventario integer [pk, increment, note: 'PK autoincremental de la existencia']
+  id_bodega integer [not null, note: 'FK a bodega']
+  id_declaracion integer [not null, note: 'Parte 1 de FK compuesta a detalle_declaracion']
+  numero_linea integer [not null, note: 'Parte 2 de FK compuesta a detalle_declaracion']
+  id_producto integer [not null, note: 'FK a producto (coincidente con detalle para consistencia denormalizada)']
+  ubicacion_estante varchar(30) [not null, note: 'Nomenclatura física de estantería o cuadrante (ej. EST-A1-N2)']
+  cantidad_almacenada numeric(12,2) [not null, note: 'Cantidad física en existencia (>= 0)']
+  unidad_medida varchar(20) [not null, note: 'Unidad de medida (unidades, kilogramos, litros, cajas)']
+  fecha_ingreso timestamptz [not null, default: `CURRENT_TIMESTAMP`, note: 'Fecha/hora de ingreso físico a bodega']
+  fecha_salida timestamptz [null, note: 'Fecha/hora de despacho o retiro (CHECK: fecha_salida >= fecha_ingreso)']
+
+  indexes {
+    (id_bodega, id_declaracion, numero_linea) [unique, name: 'uq_bodega_detalle_declaracion']
+  }
+
+  Note: 'Existencia física vinculada a una línea exacta de un DUA. Permite saber si el stock almacenado corresponde a una declaración Retenida o Liberada.'
+}
+
+// ----------------------------------------------------------------------------
+// 12. FUNCIONARIO (Personal Aduanero y Jerarquía Recursiva)
+// ----------------------------------------------------------------------------
+Table aduana.funcionario {
+  id_funcionario integer [pk, increment, note: 'PK autoincremental del funcionario']
+  id_supervisor integer [null, note: 'FK recursiva a funcionario: jefe directo (NULL para jefatura máxima)']
+  numero_empleado varchar(20) [not null, unique, note: 'Código de empleado aduanero oficial']
+  nombre_completo varchar(150) [not null, note: 'Nombre completo del funcionario']
+  puesto_cargo varchar(100) [not null, note: 'Cargo funcional (ej. Inspector de Aforo, Jefe de Operaciones)']
+  area_adscripcion varchar(100) [not null, note: 'Departamento o unidad aduanera asignada']
+  correo_institucional varchar(100) [not null, unique, note: 'Correo institucional oficial']
+  activo boolean [not null, default: true, note: 'Estado de servicio del funcionario']
+
+  Note: 'Personal aduanero. id_supervisor modela relación recursiva 1:N. CHECK impide autosupervisión directa en SQL.'
+}
+
+// ----------------------------------------------------------------------------
+// 13. INSPECCION (Actas y Resultados de Aforo Aduanero)
+// ----------------------------------------------------------------------------
+Table aduana.inspeccion {
+  id_inspeccion integer [pk, increment, note: 'PK autoincremental de la inspección']
+  id_declaracion integer [not null, note: 'FK a declaracion_aduanera: DUA sometido a aforo']
+  id_funcionario integer [not null, note: 'FK a funcionario: inspector responsable de la diligencia']
+  numero_acta varchar(30) [not null, unique, note: 'Número de acta de reconocimiento físico/documental']
+  tipo_inspeccion varchar(25) [not null, note: 'Tipo: Fisica, Documental, Escaner No Intrusivo']
+  fecha_inspeccion timestamptz [not null, default: `CURRENT_TIMESTAMP`, note: 'Fecha y hora del aforo']
+  resultado varchar(25) [not null, note: 'Resultado: Conforme, Discrepancia Arancelaria, Retencion Preventiva, Comiso']
+  observaciones text [not null, note: 'Observaciones técnicas del funcionario (no vacías para la consulta 5)']
+  dictamen_firmado boolean [not null, default: true, note: 'Constancia de firma electrónica o manual']
+
+  Note: 'Acta de inspección fiscal o física levantada sobre una declaración aduanera.'
+}
+
+// ============================================================================
+// RELACIONES Y CARDINALIDADES (REFERENCIAS)
+// ============================================================================
+
+// Importador y País (1:N)
+Ref: aduana.importador.id_pais > aduana.pais.id_pais [delete: restrict, update: cascade]
+
+// Producto y Catálogo/País (1:N)
+Ref: aduana.producto.id_categoria > aduana.categoria_arancelaria.id_categoria [delete: restrict, update: cascade]
+Ref: aduana.producto.id_pais_origen > aduana.pais.id_pais [delete: restrict, update: cascade]
+
+// Contenedor y País de Procedencia (1:N)
+Ref: aduana.contenedor.id_pais_procedencia > aduana.pais.id_pais [delete: restrict, update: cascade]
+
+// Ficha Contenedor y Contenedor (1:1 Justificada)
+// Nota: Participación 0..1 en contenedor, 1..1 en ficha_contenedor. PK es FK.
+Ref: aduana.ficha_contenedor.id_contenedor - aduana.contenedor.id_contenedor [delete: restrict, update: cascade]
+
+// Declaración Aduanera y Entidades Principales (1:N)
+Ref: aduana.declaracion_aduanera.id_importador > aduana.importador.id_importador [delete: restrict, update: cascade]
+Ref: aduana.declaracion_aduanera.id_agente_aduanal > aduana.agente_aduanal.id_agente_aduanal [delete: restrict, update: cascade]
+Ref: aduana.declaracion_aduanera.id_contenedor > aduana.contenedor.id_contenedor [delete: restrict, update: cascade]
+
+// Detalle Declaración y Declaración / Producto (1:N que resuelve N:M)
+Ref: aduana.detalle_declaracion.id_declaracion > aduana.declaracion_aduanera.id_declaracion [delete: restrict, update: cascade]
+Ref: aduana.detalle_declaracion.id_producto > aduana.producto.id_producto [delete: restrict, update: cascade]
+
+// Inventario Bodega y Bodega / Detalle / Producto
+Ref: aduana.inventario_bodega.id_bodega > aduana.bodega.id_bodega [delete: restrict, update: cascade]
+Ref: aduana.inventario_bodega.id_producto > aduana.producto.id_producto [delete: restrict, update: cascade]
+Ref: aduana.inventario_bodega.id_declaracion > aduana.declaracion_aduanera.id_declaracion [delete: restrict, update: cascade]
+
+// Jerarquía Recursiva de Funcionarios (1:N Reflexiva)
+Ref: aduana.funcionario.id_supervisor > aduana.funcionario.id_funcionario [delete: set null, update: cascade]
+
+// Inspecciones y Declaración / Funcionario (1:N)
+Ref: aduana.inspeccion.id_declaracion > aduana.declaracion_aduanera.id_declaracion [delete: restrict, update: cascade]
+Ref: aduana.inspeccion.id_funcionario > aduana.funcionario.id_funcionario [delete: restrict, update: cascade]
