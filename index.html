@@ -991,23 +991,22 @@
 
       try {
         let response = null;
-        let responseData = null;
 
-        // Try primary webhook
+        // Llamar a /api/chat (servido en el mismo origen sin problemas de CORS)
         try {
-          response = await fetch(N8N_WEBHOOK_URL, {
+          response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chatInput: text, sessionId: sessionId })
           });
         } catch (err) {
-          console.warn('Webhook primario offline, probando webhook test...', err);
+          console.warn('Error en /api/chat, intentando webhook directo...', err);
         }
 
-        // Try test webhook if primary fails
+        // Si falla, probar webhook directo de n8n
         if (!response || !response.ok) {
           try {
-            response = await fetch(N8N_TEST_WEBHOOK_URL, {
+            response = await fetch(N8N_WEBHOOK_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ chatInput: text, sessionId: sessionId })
@@ -1028,12 +1027,11 @@
             addMessage('assistant', rawText);
           }
         } else {
-          // Fallback informative response guiding user
-          addMessage('assistant', `**Aviso del Agente de Aduana:**\n\nEl webhook del workflow \`VDPl5zFTlpR9jPJ9\` en n8n no está recibiendo llamadas activas en este momento. Esto suele ocurrir cuando el workflow está en modo borrador en n8n.\n\n### Pasos sencillos para activarlo:\n1. Abre tu n8n en: [http://localhost:5678/workflow/VDPl5zFTlpR9jPJ9](http://localhost:5678/workflow/VDPl5zFTlpR9jPJ9)\n2. Asegúrate de activar el interruptor **Active** (arriba a la derecha) o presionar **"Test workflow"** en el lienzo.\n3. Recuerda que si las tablas de Supabase aún no han sido creadas, ejecuta el script \`laboratorio3_aduana/sql/laboratorio3_supabase_public.sql\` en el [SQL Editor de Supabase](https://supabase.com/dashboard/project/ilywnswaosjdehtlmbwv/sql).\n\n*El nodo consultor ya está configurado con Supabase.*`);
+          addMessage('assistant', `**Aviso:** No se pudo obtener respuesta del servidor. Verifica que el servidor esté activo en http://localhost:8080.`);
         }
       } catch (err) {
         removeThinkingBubble();
-        addMessage('assistant', `**Error al comunicar con n8n:** ${err.message}\n\nAsegúrate de que n8n esté corriendo en \`http://localhost:5678\`.`);
+        addMessage('assistant', `**Error al comunicar con el servidor:** ${err.message}`);
       } finally {
         sendBtn.disabled = !inputEl.value.trim();
         inputEl.focus();
