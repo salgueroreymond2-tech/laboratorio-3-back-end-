@@ -30,11 +30,18 @@ El proyecto se encuentra estrictamente modularizado en la raíz del repositorio 
 
 ```text
 laboratorio-3-back-end-/
+├── entregables_classroom/                      # 🎯 CARPETA CON LOS 5 ARCHIVOS EXACTOS PARA ENTREGA EN CLASSROOM
+│   ├── Salguero_Reymond_Investigacion_Lab3.pdf # Entregable 1: Investigación (APA 7) y Bitácora IA (15 + 5 pts)
+│   ├── Salguero_Reymond_DER_Lab3.png           # Entregable 2: Diagrama Entidad-Relación HD (13 entidades) (20 pts)
+│   ├── Salguero_Reymond_Aduana_Lab3.sql        # Entregable 3: Script SQL DDL + 205 Inserts + 8 Consultas (40 pts)
+│   ├── Salguero_Reymond_Agente_Lab3.json       # Entregable 4: Flujo oficial n8n exportado (5 nodos) (20 pts)
+│   └── Salguero_Reymond_Evidencia_Lab3.png     # Entregable 5: Evidencia oficial n8n + Web + Ejecuciones (20 pts)
 ├── investigacion/
-│   └── Investigacion_Laboratorio3_Supabase.pdf # Base conceptual formal (6 páginas + referencias APA 7)
+│   └── Investigacion_Laboratorio3_Supabase.pdf # Base conceptual formal (9 páginas + referencias APA 7)
 ├── modelo/
 │   ├── aduana.dbml                             # Contrato del esquema en DBML (válido para dbdiagram.io)
 │   ├── aduana.drawio                           # Diagrama Entidad-Relación visual editable
+│   ├── Salguero_Reymond_DER_Lab3.png           # Renderizado de alta resolución del modelo relacional
 │   ├── diccionario_datos.md                    # Especificación exhaustiva de las 13 tablas, columnas y tipos
 │   └── reglas_negocio.md                       # Cardinalidades, trazabilidad geográfica y reglas aduaneras
 ├── sql/
@@ -51,11 +58,12 @@ laboratorio-3-back-end-/
 │   ├── system_prompt.md                        # Directivas del agente de IA, esquema exacto y reglas de consulta
 │   └── README.md                               # Guía técnica de nodos, importación y configuración
 ├── pruebas/
+│   ├── Salguero_Reymond_Evidencia_Lab3.png     # Panel de evidencia oficial de ejecuciones y chat en tiempo real
 │   ├── casos_y_resultados_esperados.md         # Preguntas exactas, SQL y tablas de resultados esperados calculados
 │   ├── pruebas_workflow.md                     # Guía paso a paso de pruebas del agente y validaciones
 │   └── verificacion_tecnica.md                 # Pruebas de contención de permisos e inyección de prompts
 ├── web/
-│   ├── index.html                              # Interfaz web interactiva del sistema de inventario aduanero
+│   ├── index.html                              # Interfaz web interactiva del sistema de inventario aduanero (+5 pts extra)
 │   ├── server.py                               # Servidor HTTP proxy que registra cada consulta en n8n
 │   └── run_n8n.bat                             # Script lanzador con bypass SSL para n8n local
 ├── README.md                                   # Guía maestra de despliegue, configuración y arquitectura
