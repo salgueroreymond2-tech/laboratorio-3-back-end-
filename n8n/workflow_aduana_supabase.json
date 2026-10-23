@@ -1,0 +1,389 @@
+{
+  "name": "Laboratorio 3 - Agente de Inventario Aduanero",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "title": "Sistema de Inventario Aduanero - Laboratorio #3",
+          "subtitle": "Consultas en tiempo real vía Supabase Data API",
+          "initialMessages": "¡Hola! Soy el Asistente Oficial del Sistema de Inventario Aduanero (Laboratorio #3).\nPuedo ayudarte a consultar información en tiempo real sobre declaraciones aduaneras (DUA), existencias en bodega, mercancías retenidas de China, procedencia de contenedores, importadores e inspecciones aduaneras conectándome a Supabase Data API.\n\n¿Qué deseas consultar?"
+        }
+      },
+      "id": "d4b35e01-2c7a-494a-bb48-3ca28b43f340",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        3872,
+        2368
+      ],
+      "webhookId": "aduana-lab3-chat-webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Eres el Asistente Oficial de Inteligencia Artificial del Sistema de Inventario Aduanero (Laboratorio #3).\nTu objetivo es ayudar a los funcionarios y analistas de aduana a consultar información en tiempo real sobre declaraciones aduaneras (DUA), existencias en bodega, mercancías retenidas, procedencia de contenedores, importadores y actas de inspección, utilizando exclusivamente Supabase Data API a través de tus herramientas autorizadas.\n\n### REGLAS DE SEGURIDAD Y COMPORTAMIENTO (ESTRICTAS):\n1. **SOLO LECTURA (DATA API SUPABASE):** Todas las consultas se realizan mediante Supabase Data API en modo lectura. Tienes ESTRICTAMENTE PROHIBIDO modificar o alterar datos.\n2. **CERO INVENCIÓN DE DATOS:** Siempre ejecuta la herramienta correspondiente antes de responder. Si una consulta no devuelve registros o la base de datos está vacía, indícalo con transparencia y claridad sin inventar números, nombres o fechas.\n3. **RESILIENCIA Y DIAGNÓSTICO:** Si alguna consulta devuelve que una tabla no existe o error de schema cache (PGRST205), informa amablemente que se debe ejecutar el archivo SQL 'laboratorio3_aduana/sql/laboratorio3_supabase_public.sql' en el SQL Editor de Supabase (https://supabase.com/dashboard/project/ilywnswaosjdehtlmbwv/sql).\n4. **FORMATO DE RESPUESTA:** Responde siempre en español claro, profesional y estructurado con tablas Markdown cuando presentes listas, montos o conteos.\n\n### HERRAMIENTAS AUTORIZADAS DISPONIBLES:\n- 'Consultar_BD_Aduana': Herramienta consultora general de Supabase Data API. Permite obtener registros de cualquier tabla: declaracion_aduanera, importador, producto, bodega, inventario_bodega, contenedor, inspeccion, funcionario, categoria_arancelaria, pais.\n- 'consultar_importaciones_periodo': Declaraciones de importación tramitadas en un rango de fechas (por defecto octubre 2026: 2026-10-01 a 2026-11-01).\n- 'consultar_mercancia_retenida_por_origen': Mercancías de un país de origen (por defecto China) asociadas a declaraciones en estado 'Retenida' con stock activo en bodega.\n- 'consultar_pais_con_mas_contenedores': Ranking de países de procedencia con el mayor número total de contenedores registrados (preserva empates en 1er lugar).\n- 'consultar_importador_mayor_valor': Importador con el mayor valor acumulado declarado en USD (preserva empates en 1er lugar).\n- 'consultar_inspecciones_con_observaciones': Actas de inspección aduanera con observaciones técnicas válidas y funcionario responsable.\n- 'consultar_stock_por_bodega': Existencias físicas activas agrupadas por bodega, producto y unidad de medida (parámetro bodega: 'TODAS' o nombre de bodega).\n- 'consultar_importadores_por_umbral': Empresas importadoras cuyo valor total acumulado declarado supera un importe (por defecto $100,000 USD).\n- 'consultar_permanencia_en_bodega': Mercancías almacenadas activas y días de permanencia en recinto fiscal con respecto a una fecha de corte (por defecto 2026-10-31 23:59:59-06).",
+          "maxIterations": 6
+        }
+      },
+      "id": "3bad91d6-f393-48c6-b7b4-60e760871e12",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        4144,
+        2368
+      ]
+    },
+    {
+      "parameters": {
+        "model": "deepseek-chat",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "id": "5f3cac79-3d9f-47c5-9cfb-f07f6a4c9bd7",
+      "name": "DeepSeek Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatDeepSeek",
+      "typeVersion": 1,
+      "position": [
+        4000,
+        2608
+      ],
+      "credentials": {
+        "deepSeekApi": {
+          "id": "DfbSLYL3RlEqvAOL",
+          "name": "DeepSeek account 11"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "fromInput",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 6
+      },
+      "id": "968a266b-7ff3-4b60-bd5c-489e8cec5904",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        4180,
+        2608
+      ]
+    },
+    {
+      "parameters": {
+        "name": "Consultar_BD_Aduana",
+        "description": "Herramienta consultora general de la base de datos de aduana alojada en Supabase (Data API). Permite consultar registros de las tablas: declaracion_aduanera, importador, producto, bodega, inventario_bodega, contenedor, inspeccion, funcionario, categoria_arancelaria, pais.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF00ConsultarAduana",
+          "mode": "list"
+        }
+      },
+      "id": "4c13826a-934f-4462-8230-0ebb634b928f",
+      "name": "Consultar_BD_Aduana",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4384,
+        2608
+      ]
+    },
+    {
+      "parameters": {
+        "name": "consultar_importaciones_periodo",
+        "description": "Consulta declaraciones aduaneras de importación entre dos fechas en Supabase. Devuelve número de DUA, fecha, importador, agente aduanal y estado operativo.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF01AduanaImpP",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4580,
+        2200
+      ],
+      "id": "tool-wf-01",
+      "name": "consultar_importaciones_periodo"
+    },
+    {
+      "parameters": {
+        "name": "consultar_mercancia_retenida_por_origen",
+        "description": "Consulta mercancías en bodega en Supabase cuyo país de origen es China, con declaración en estado Retenida y stock positivo.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF02AduanaMercC",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4580,
+        2340
+      ],
+      "id": "tool-wf-02",
+      "name": "consultar_mercancia_retenida_por_origen"
+    },
+    {
+      "parameters": {
+        "name": "consultar_pais_con_mas_contenedores",
+        "description": "Determina el país o países de procedencia con el mayor número total de contenedores registrados en Supabase (preserva empates en 1er lugar).",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF03AduanaPaisC",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4580,
+        2480
+      ],
+      "id": "tool-wf-03",
+      "name": "consultar_pais_con_mas_contenedores"
+    },
+    {
+      "parameters": {
+        "name": "consultar_importador_mayor_valor",
+        "description": "Identifica al importador con el mayor valor acumulado declarado en USD en Supabase (preserva empates en 1er lugar).",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF04AduanaImpVal",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4580,
+        2620
+      ],
+      "id": "tool-wf-04",
+      "name": "consultar_importador_mayor_valor"
+    },
+    {
+      "parameters": {
+        "name": "consultar_inspecciones_con_observaciones",
+        "description": "Lista actas de inspección aduanera en Supabase con observaciones técnicas válidas, detallando funcionario responsable y cargo.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF05AduanaInspOb",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4800,
+        2200
+      ],
+      "id": "tool-wf-05",
+      "name": "consultar_inspecciones_con_observaciones"
+    },
+    {
+      "parameters": {
+        "name": "consultar_stock_por_bodega",
+        "description": "Calcula las existencias físicas activas en Supabase agrupadas por bodega, producto y unidad de medida. Permite filtrar por 'TODAS' o por bodega.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF06AduanaStkBod",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4800,
+        2340
+      ],
+      "id": "tool-wf-06",
+      "name": "consultar_stock_por_bodega"
+    },
+    {
+      "parameters": {
+        "name": "consultar_importadores_por_umbral",
+        "description": "Filtra en Supabase importadores cuyo valor total acumulado supera un umbral especificado (por defecto $100,000 USD).",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF07AduanaImpUmb",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4800,
+        2480
+      ],
+      "id": "tool-wf-07",
+      "name": "consultar_importadores_por_umbral"
+    },
+    {
+      "parameters": {
+        "name": "consultar_permanencia_en_bodega",
+        "description": "Calcula en Supabase los días de permanencia en recinto fiscal con respecto a una fecha de corte, ordenando de mayor a menor.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SWF08AduanaPermBo",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1,
+      "position": [
+        4800,
+        2620
+      ],
+      "id": "tool-wf-08",
+      "name": "consultar_permanencia_en_bodega"
+    }
+  ],
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepSeek Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar_BD_Aduana": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_importaciones_periodo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_mercancia_retenida_por_origen": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_pais_con_mas_contenedores": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_importador_mayor_valor": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_inspecciones_con_observaciones": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_stock_por_bodega": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_importadores_por_umbral": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_permanencia_en_bodega": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": true
+}

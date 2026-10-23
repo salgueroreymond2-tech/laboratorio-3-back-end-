@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Inventario Aduanero | Laboratorio #3</title>
+  <meta name="description" content="Interfaz interactiva de consulta de inventario aduanero con AI Agent en n8n y Supabase Data API">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+  
+  <style>
+    :root {
+      --bg-primary: #070B14;
+      --bg-surface: rgba(15, 23, 42, 0.75);
+      --bg-card: rgba(30, 41, 59, 0.65);
+      --bg-input: rgba(15, 23, 42, 0.9);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(16, 185, 129, 0.35);
+      
+      --accent-emerald: #10B981;
+      --accent-cyan: #06B6D4;
+      --accent-blue: #3B82F6;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+      
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-glow: 0 0 25px rgba(16, 185, 129, 0.15);
+      --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.1) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+    }
+
+    /* Ambient top bar */
+    .header-bar {
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(7, 11, 20, 0.85);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 14px 28px;
+    }
+
+    .header-content {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #10B981, #06B6D4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+
+    .brand-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: none;
+      stroke: #070B14;
+      stroke-width: 2.2;
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(90deg, #FFFFFF, #CBD5E1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-badges {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      font-size: 0.74rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34D399;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    .n8n-link-btn {
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .n8n-link-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent-cyan);
+      color: #38BDF8;
+    }
+
+    /* Main Container */
+    .main-layout {
+      max-width: 1300px;
+      width: 100%;
+      margin: 20px auto;
+      padding: 0 24px 30px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    @media (max-width: 960px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar Panel */
+    .sidebar-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-card);
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .meta-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      padding: 8px 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .meta-item .label {
+      color: var(--text-dim);
+    }
+
+    .meta-item .val {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      color: #38BDF8;
+      font-size: 0.76rem;
+    }
+
+    /* Quick Queries */
+    .chip-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .query-chip {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 0.8rem;
+      font-family: var(--font-sans);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.35;
+    }
+
+    .query-chip:hover {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: var(--accent-emerald);
+      transform: translateX(4px);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.15);
+    }
+
+    .query-chip span.icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    /* Chat Area */
+    .chat-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 120px);
+      min-height: 600px;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chat-header {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(15, 23, 42, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .chat-header-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .agent-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10B981, #3B82F6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .agent-details h2 {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .agent-details p {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    /* Message History */
+    .messages-container {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .messages-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    .message {
+      display: flex;
+      gap: 14px;
+      max-width: 85%;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .message.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      max-width: 92%;
+    }
+
+    .msg-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .message.assistant .msg-avatar {
+      background: linear-gradient(135deg, #10B981, #06B6D4);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    .message.user .msg-avatar {
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+    }
+
+    .msg-bubble {
+      padding: 14px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .message.user .msg-bubble {
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .message.assistant .msg-bubble {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Markdown inside bubble */
+    .msg-bubble p {
+      margin-bottom: 10px;
+    }
+
+    .msg-bubble p:last-child {
+      margin-bottom: 0;
+    }
+
+    .msg-bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 0.8rem;
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .msg-bubble th {
+      background: rgba(30, 41, 59, 0.9);
+      color: #38BDF8;
+      text-align: left;
+      padding: 10px 12px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .msg-bubble td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+
+    .msg-bubble tr:last-child td {
+      border-bottom: none;
+    }
+
+    .msg-bubble tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .msg-bubble code {
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #34D399;
+      font-size: 0.8em;
+    }
+
+    .msg-bubble pre {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 10px 0;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .msg-bubble pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .msg-bubble ul, .msg-bubble ol {
+      margin: 8px 0 10px 22px;
+    }
+
+    .msg-bubble li {
+      margin-bottom: 4px;
+    }
+
+    /* Thinking State */
+    .thinking-bubble {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 18px;
+    }
+
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      animation: wave 1.3s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; background: var(--accent-cyan); }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; background: var(--accent-blue); }
+
+    @keyframes wave {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+      30% { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Input Area */
+    .input-bar {
+      padding: 16px 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .chat-textarea {
+      flex: 1;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 48px;
+      max-height: 140px;
+      outline: none;
+      transition: all 0.2s ease;
+      line-height: 1.4;
+    }
+
+    .chat-textarea:focus {
+      border-color: var(--accent-emerald);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    .send-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #10B981, #059669);
+      border: none;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+      background: linear-gradient(135deg, #34D399, #10B981);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .send-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+    }
+
+    /* Footer disclaimer */
+    .chat-footer-note {
+      text-align: center;
+      padding: 6px 0 0;
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <header class="header-bar">
+    <div class="header-content">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Sistema de Inventario Aduanero</h1>
+          <p>Laboratorio #3 | AI Agent en n8n &bull; Supabase Data API &bull; DeepSeek</p>
+        </div>
+      </div>
+
+      <div class="status-badges">
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span>Supabase Data API</span>
+        </div>
+        <div class="status-pill" style="border-color: rgba(6, 182, 212, 0.3); background: rgba(6, 182, 212, 0.12); color: #38BDF8;">
+          <span class="status-dot" style="background: #06B6D4; box-shadow: 0 0 8px #06B6D4;"></span>
+          <span>AI Agent Activo</span>
+        </div>
+        <a href="http://localhost:5678/workflow/VDPl5zFTlpR9jPJ9" target="_blank" class="n8n-link-btn" title="Abrir workflow en n8n">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          Abrir en n8n
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="main-layout">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar-panel">
+      <!-- Project Metadata -->
+      <div class="card">
+        <h3 class="card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          Arquitectura del Sistema
+        </h3>
+        <ul class="meta-list">
+          <li class="meta-item">
+            <span class="label">Orquestador:</span>
+            <span class="val">n8n AI Agent</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Modelo LLM:</span>
+            <span class="val">DeepSeek Chat</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Base de Datos:</span>
+            <span class="val">Supabase PostgreSQL 18</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Modo Acceso:</span>
+            <span class="val">Data API (Solo Lectura)</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Nodo Consultor:</span>
+            <span class="val">Supabase Subworkflow</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Herramientas:</span>
+            <span class="val">8 Subworkflows Modulares</span>
+          </li>
+          <li class="meta-item">
+            <span class="label">Workflow ID:</span>
+            <span class="val">VDPl5zFTlpR9jPJ9</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Quick Queries -->
+      <div class="card">
+        <h3 class="card-title">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Consultas Oficiales del Lab #3
+        </h3>
+        <div class="chip-grid">
+          <button class="query-chip" data-prompt="¿Cuáles declaraciones de importación se tramitaron en octubre de 2026? Detalla número de DUA, fecha, importador y agente.">
+            <span class="icon">📅</span>
+            <span>Importaciones de Octubre 2026</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Qué mercancías originarias de China tienen su declaración aduanera retenida y aún cuentan con existencia en bodega?">
+            <span class="icon">🇨🇳</span>
+            <span>Mercancía retenida de China</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Cuál es el país de procedencia con el mayor número total de contenedores registrados?">
+            <span class="icon">📦</span>
+            <span>País con más contenedores</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Cuál importador presenta el mayor valor total acumulado declarado en dólares?">
+            <span class="icon">💰</span>
+            <span>Importador con mayor valor USD</span>
+          </button>
+          <button class="query-chip" data-prompt="Muestra las inspecciones aduaneras que tienen observaciones técnicas registradas y el funcionario a cargo.">
+            <span class="icon">🔍</span>
+            <span>Inspecciones con observaciones</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Cuál es el stock físico total disponible en cada una de las bodegas fiscales?">
+            <span class="icon">🏭</span>
+            <span>Stock físico por bodega</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Cuáles importadores han tramitado declaraciones por un valor acumulado superior a $100,000 USD?">
+            <span class="icon">📈</span>
+            <span>Importadores sobre $100K USD</span>
+          </button>
+          <button class="query-chip" data-prompt="¿Cuáles mercancías registran mayor tiempo de permanencia en recinto fiscal y cuántos días llevan?">
+            <span class="icon">⏱️</span>
+            <span>Días de permanencia en bodega</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Chat Area -->
+    <section class="chat-panel">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="agent-avatar">🤖</div>
+          <div class="agent-details">
+            <h2>Asistente de Aduana</h2>
+            <p>Conectado a n8n &bull; Consultor Supabase Data API</p>
+          </div>
+        </div>
+        <div class="chat-actions">
+          <button class="icon-btn" id="btn-clear" title="Limpiar conversación">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            Limpiar Chat
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages Stream -->
+      <div class="messages-container" id="chat-messages">
+        <!-- Welcome Message -->
+        <div class="message assistant">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">
+            <p><strong>¡Hola! Soy el Asistente Oficial del Sistema de Inventario Aduanero (Laboratorio #3).</strong></p>
+            <p>Estoy conectado en tiempo real mediante <strong>n8n</strong> y la <strong>Data API de Supabase</strong> con modelo de lenguaje DeepSeek. Puedo ayudarte a responder cualquiera de las 8 consultas oficiales del inventario aduanero:</p>
+            <ul>
+              <li>Declaraciones de importación por rango de fechas (Octubre 2026).</li>
+              <li>Mercancías de China retenidas en bodega.</li>
+              <li>País de procedencia con mayor cantidad de contenedores.</li>
+              <li>Importador con mayor valor total acumulado declarado en USD.</li>
+              <li>Actas de inspección física y documental con observaciones técnicas.</li>
+              <li>Existencias físicas agrupadas por bodega fiscal.</li>
+              <li>Empresas importadoras sobre el umbral de $100,000 USD.</li>
+              <li>Cálculo de días de permanencia en recinto fiscal.</li>
+            </ul>
+            <p><em>Selecciona una de las consultas rápidas a la izquierda o escribe tu pregunta abajo.</em></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Bar -->
+      <div class="input-bar">
+        <textarea 
+          class="chat-textarea" 
+          id="chat-input" 
+          rows="1" 
+          placeholder="Escribe tu consulta sobre declaraciones, existencias, bodegas o importadores..."
+        ></textarea>
+        <button class="send-btn" id="btn-send" title="Enviar consulta">
+          <svg viewBox="0 0 24 24">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="chat-footer-note">
+        Laboratorio #3 Aduana &bull; Integración verificada n8n + Supabase Data API
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Embedded n8n Chat library support -->
+  <script type="module">
+    import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+    try {
+      createChat({
+        webhookUrl: 'http://localhost:5678/webhook/aduana-lab3-chat-webhook/chat',
+        mode: 'window',
+        target: '#n8n-widget-container',
+        showWelcomeScreen: false,
+        defaultLanguage: 'es',
+        initialMessages: [
+          '¡Hola! Soy el Agente de Inventario Aduanero en n8n.',
+          '¿Qué consulta de aduanas deseas realizar hoy?'
+        ],
+        i18n: {
+          es: {
+            title: 'Aduana IA - n8n Chat Widget',
+            subtitle: 'Conectado a Supabase Data API',
+            footer: 'Laboratorio #3 - Aduana',
+            getStarted: 'Nueva conversación',
+            inputPlaceholder: 'Escribe tu consulta aquí...'
+          }
+        }
+      });
+    } catch (e) {
+      console.warn('n8n chat widget fallback mode initialized', e);
+    }
+  </script>
+
+  <!-- Chat Logic -->
+  <script>
+    const messagesEl = document.getElementById('chat-messages');
+    const inputEl = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-send');
+    const clearBtn = document.getElementById('btn-clear');
+    const queryChips = document.querySelectorAll('.query-chip');
+
+    const sessionId = 'session_' + Math.random().toString(36).substring(2, 10);
+    const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/aduana-lab3-chat-webhook/chat';
+    const N8N_TEST_WEBHOOK_URL = 'http://localhost:5678/webhook-test/aduana-lab3-chat-webhook/chat';
+
+    // Auto-expand textarea
+    inputEl.addEventListener('input', () => {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+      sendBtn.disabled = !inputEl.value.trim();
+    });
+
+    // Enter to submit
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    clearBtn.addEventListener('click', () => {
+      messagesEl.innerHTML = `
+        <div class="message assistant">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">
+            <p>Conversación reiniciada. ¿En qué consulta del inventario aduanero te puedo ayudar?</p>
+          </div>
+        </div>
+      `;
+    });
+
+    queryChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const prompt = chip.getAttribute('data-prompt');
+        inputEl.value = prompt;
+        inputEl.style.height = 'auto';
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+        sendBtn.disabled = false;
+        sendMessage();
+      });
+    });
+
+    // Simple Markdown Formatter
+    function formatMarkdown(text) {
+      if (!text) return '';
+      let escaped = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      // Tables
+      const tableRegex = /\|(.+)\|[\r\n]+\|[-:| ]+\|[\r\n]+((?:\|.+[\r\n]*)+)/g;
+      escaped = escaped.replace(tableRegex, (match, header, body) => {
+        const ths = header.split('|').filter(c => c.trim().length > 0).map(c => `<th>${c.trim()}</th>`).join('');
+        const rows = body.trim().split('\n').map(row => {
+          const tds = row.split('|').filter(c => c.trim().length > 0).map(c => `<td>${c.trim()}</td>`).join('');
+          return `<tr>${tds}</tr>`;
+        }).join('');
+        return `<table><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+      });
+
+      // Code blocks
+      escaped = escaped.replace(/```([a-z]*)([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+      // Inline code
+      escaped = escaped.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Bold
+      escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+      // Italic
+      escaped = escaped.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+      // Paragraphs
+      escaped = escaped.split('\n\n').map(p => {
+        if (p.startsWith('<table>') || p.startsWith('<pre>')) return p;
+        return `<p>${p.replace(/\n/g, '<br>')}</p>`;
+      }).join('');
+
+      return escaped;
+    }
+
+    function addMessage(role, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `message ${role}`;
+
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.innerHTML = formatMarkdown(text);
+
+      msgDiv.appendChild(avatar);
+      msgDiv.appendChild(bubble);
+      messagesEl.appendChild(msgDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
+      return bubble;
+    }
+
+    function addThinkingBubble() {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message assistant';
+      msgDiv.id = 'thinking-indicator';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = '🤖';
+
+      const bubble = document.createElement('div');
+      bubble.className = 'msg-bubble thinking-bubble';
+      bubble.innerHTML = `
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span style="font-size:0.78rem; color:var(--text-dim); margin-left:8px;">Consultando Supabase Data API...</span>
+      `;
+
+      msgDiv.appendChild(avatar);
+      msgDiv.appendChild(bubble);
+      messagesEl.appendChild(msgDiv);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function removeThinkingBubble() {
+      const el = document.getElementById('thinking-indicator');
+      if (el) el.remove();
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      addMessage('user', text);
+      inputEl.value = '';
+      inputEl.style.height = '48px';
+      sendBtn.disabled = true;
+
+      addThinkingBubble();
+
+      try {
+        let response = null;
+        let responseData = null;
+
+        // Try primary webhook
+        try {
+          response = await fetch(N8N_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chatInput: text, sessionId: sessionId })
+          });
+        } catch (err) {
+          console.warn('Webhook primario offline, probando webhook test...', err);
+        }
+
+        // Try test webhook if primary fails
+        if (!response || !response.ok) {
+          try {
+            response = await fetch(N8N_TEST_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chatInput: text, sessionId: sessionId })
+            });
+          } catch (e2) {}
+        }
+
+        removeThinkingBubble();
+
+        if (response && response.ok) {
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await response.json();
+            const output = data.output || data.text || data.response || JSON.stringify(data, null, 2);
+            addMessage('assistant', output);
+          } else {
+            const rawText = await response.text();
+            addMessage('assistant', rawText);
+          }
+        } else {
+          // Fallback informative response guiding user
+          addMessage('assistant', `**Aviso del Agente de Aduana:**\n\nEl webhook del workflow \`VDPl5zFTlpR9jPJ9\` en n8n no está recibiendo llamadas activas en este momento. Esto suele ocurrir cuando el workflow está en modo borrador en n8n.\n\n### Pasos sencillos para activarlo:\n1. Abre tu n8n en: [http://localhost:5678/workflow/VDPl5zFTlpR9jPJ9](http://localhost:5678/workflow/VDPl5zFTlpR9jPJ9)\n2. Asegúrate de activar el interruptor **Active** (arriba a la derecha) o presionar **"Test workflow"** en el lienzo.\n3. Recuerda que si las tablas de Supabase aún no han sido creadas, ejecuta el script \`laboratorio3_aduana/sql/laboratorio3_supabase_public.sql\` en el [SQL Editor de Supabase](https://supabase.com/dashboard/project/ilywnswaosjdehtlmbwv/sql).\n\n*El nodo consultor ya está configurado con Supabase.*`);
+        }
+      } catch (err) {
+        removeThinkingBubble();
+        addMessage('assistant', `**Error al comunicar con n8n:** ${err.message}\n\nAsegúrate de que n8n esté corriendo en \`http://localhost:5678\`.`);
+      } finally {
+        sendBtn.disabled = !inputEl.value.trim();
+        inputEl.focus();
+      }
+    }
+  </script>
+</body>
+</html>
